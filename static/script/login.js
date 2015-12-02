@@ -19,7 +19,8 @@ var bHaveImage = true;
 
 var user = casper.cli.get("user") || "18217040285";
 var password = casper.cli.get("password") || "wang123456";
-var hosturl = "http://hd.hunteron.com/";
+var hosturl = "http://hd.hunteron.com";
+var indexurl = "http://hd.hunteron.com/#/positions/plateform";
 
 function saveimage(filename) {
 	if (bHaveImage) {
@@ -47,47 +48,32 @@ casper.on("http.status.500", function(resource) {
 	this.log(resource.url + " is in error", "ERROR");
 });
 
+casper.userAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X)');
+
 casper.start(hosturl, function() {
-	if (this.exists('#email')) {
-		this.sendKeys('#email', user);
-	} else {
-		saveimage("failed_enter_user");
-	}
-	if (this.exists('#password')) {
-		this.sendKeys('#password', password);
-	} else {
-		saveimage("failed_enter_password");
-	}
+
+	this.echo("open the home page.")
+});
+
+casper.thenOpenAndEvaluate(hosturl, function(){
+	var f = document.querySelector('form');
+	f.querySelector('input[name=email]').value=user;
+	f.querySelector('input[name=password]').value=password;
+	f.submit();
+
 });
 
 casper.then(function() {
-	casper.waitForSelector("form input[name='log.login_form']", function() {
-	    this.fillSelectors("form[name='log.login_form']", {
-	        'input[name=email]' : user,
-	        'input[name=password]' : password,
-	    });
-	}, true);
 
-	this.evaluate(function () {
-        $('form#user-login').submit();
-    });
-
-	if (this.exists('#log.login_form')) {
-		this.click('#log.login_form');
-	} else {
-		saveimage("failed_sumbit_login");
+	if (this.getCurrentUrl() != indexurl){
+		saveimage("failed_in_index_page");
+	}else{
+		this.echo("open the first page.")
 	}
-});
 
-casper.then(function() {
-	if (this.getElementAttribute('.home_service', 'class') == "home_service") {
-		result = 1;
-	} else {
-		saveimage("failed_in_home_page");
-	}
 });
 
 casper.run(function() {
-	this.echo(result);
+//	this.debugPage();
 	this.exit(result);
 });
